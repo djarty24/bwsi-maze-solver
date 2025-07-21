@@ -1,4 +1,5 @@
 import random
+import matplotlib.pyplot as plt
 
 class Room:
     def __init__(self, x, y):
@@ -83,8 +84,39 @@ class Maze:
                     line += " "
             print(line)
 
+    def plot(self, start_coords=None, end_coords=None):
+        fig, ax = plt.subplots(figsize=(8, 8))
+        ax.set_aspect('equal')
+        ax.axis('off')
+
+        ax.set_xlim(-0.5, self.m - 0.5)
+        ax.set_ylim(-0.5, self.m - 0.5)
+
+        for x in range(self.m):
+            for y in range(self.m):
+                room = self.grid[x][y]
+
+                plot_y = self.m - 1 - y
+
+                if room.walls['N']:
+                    ax.plot([x-0.5, x+0.5], [plot_y+0.5, plot_y+0.5], color='black', lw=2)
+                if room.walls['S']:
+                    ax.plot([x-0.5, x+0.5], [plot_y-0.5, plot_y-0.5], color='black', lw=2)
+                if room.walls['E']:
+                    ax.plot([x+0.5, x+0.5], [plot_y-0.5, plot_y+0.5], color='black', lw=2)
+                if room.walls['W']:
+                    ax.plot([x-0.5, x-0.5], [plot_y-0.5, plot_y+0.5], color='black', lw=2)
+
+        if start_coords:
+            ax.plot(start_coords[0], self.m - 1 - start_coords[1], 'go', markersize=10, label='Start')
+        if end_coords:
+            ax.plot(end_coords[0], self.m - 1 - end_coords[1], 'ro', markersize=10, label='End')
+
+        plt.legend()
+        plt.show()
+
 if __name__ == "__main__":
-    maze_size = 3
+    maze_size = 10
     print(f"Generating a {maze_size}x{maze_size} maze...")
     
     my_maze = Maze(maze_size)
@@ -92,3 +124,6 @@ if __name__ == "__main__":
     my_maze.generate_maze()
     
     my_maze.display()
+    
+    print("Displaying graphical plot...")
+    my_maze.plot(start_coords=(0, 0), end_coords=(maze_size-1, maze_size-1))
