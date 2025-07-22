@@ -1,5 +1,8 @@
 import random
 import matplotlib.pyplot as plt
+from qiskit.circuit import QuantumCircuit
+from qiskit.quantum_info import Operator
+from utils import Direction, make_direction_ket, apply_direction
 
 class Room:
     def __init__(self, x, y):
@@ -114,6 +117,66 @@ class Maze:
 
         plt.legend()
         plt.show()
+    
+    def make_indiv_reg(self):
+        pass
+
+    """
+    returns an operator
+    """
+    def _dfs_mir(self, last: Direction, ic: int, jc: int, done: bool, steps_remaining: int) -> Operator:
+        invlast = { "N": "S", "S": "N", "E": "W", "W": "E" }[last];
+        range_all_qubits = list(range(0, 2*steps_remaining))
+
+        op = QuantumCircuit(2 * steps_remaining);
+
+        if steps_remaining == 0:
+            return op
+        
+        open_directions = []
+
+        for d in ["N", "E", "S", "W"]:
+            if not (d == invlast or self.grid[ic][jc].walls[d]):
+                open_directions.append(d)  # imagine if i used list comprehension for this...
+        
+        if len(open_directions) == 0:
+            done = True
+
+        if done:
+            (i_n, j_n) = apply_direction(invlast, ic, jc)
+            
+            op.append(make_direction_ket(invlast), [0, 1])
+            op.append(
+                self._dfs_mir(invlast, i_n, j_n, True, steps_remaining - 1),
+                list(range(2, 2*steps_remaining))
+            )
+            
+            Operator(op)
+            
+            return op
+        
+        op.append(make_equal_superposition(open_directions), [0, 1])
+
+        for d in open_directions:
+            (i_n, j_n) = apply_direction(invlast, ic, jc)
+
+            dfs_n = self._dfs_mir(d, i_n, j_n, False, steps_remaining - 1)
+            advance_dfs = lambda ctrl_state : op.append(dfs_n.control(2, ctrl_state=ctrl_state), range_all_qubits)
+
+            match d:
+                case "N":
+                    advance_dfs("00")
+                case "E":
+                    advance_dfs("01")
+                case "S":
+                    advance_dfs("10")
+                case "W":
+                    advance_dfs("11")
+
+        Operator(op)
+
+        return op
+
 
 if __name__ == "__main__":
     maze_size = 10
